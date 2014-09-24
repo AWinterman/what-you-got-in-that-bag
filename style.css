@@ -1,0 +1,30 @@
+body {
+        margin: auto;
+        font-size: 16px;
+        max-width: 40em;
+}
+
+tr {
+        padding-top: 4px;
+        padding-bottom: 4px;
+}
+
+tbody tr:nth-child(2n + 1) {
+        background: #eee;
+}
+
+table {
+        margin: auto;
+        width: 100%;
+        max-width: 100%
+}
+
+td {
+        padding-left: 4px;
+}
+
+th {
+        padding-left: 8px;
+        padding-right: 8px;
+        white-space: nowrap;
+}
