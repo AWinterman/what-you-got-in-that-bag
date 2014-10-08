@@ -1,5 +1,0 @@
--f http://pulp.prod.urbanairship.com/repos/python-packages/
-Jinja2==2.7.3
-MarkupSafe==0.23
-j2cli==0.3.0-1
-wsgiref==0.1.2

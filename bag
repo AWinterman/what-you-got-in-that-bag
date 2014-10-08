@@ -1,0 +1,104 @@
+#!/usr/bin/env sh
+set +e
+while getopts ":o:s:e:u:f:" opt;
+do
+    case $opt in
+        u)
+            TARGET=$OPTARG
+            ;;
+        o)
+            OUT=$OPTARG
+            ;;
+
+        s)
+            STYLE=$OPTARG
+            ;;
+
+        e)
+            EXT=$OPTARG
+            ;;
+        f)
+            FORMAT=$OPTARG
+            ;;
+        \?)
+          echo "Invalid option: -$OPTARG" >&2
+          exit 1
+          ;;
+        :)
+          echo "Option -$OPTARG requires an argument." >&2
+          exit 1
+          ;;
+    esac
+done
+
+if [ -z "$TARGET" ]
+then
+    cat "./README.txt" >&2
+    exit 1
+fi
+
+
+if [ -z "$OUT" ]
+then
+        OUT="./build"
+fi
+
+if [ -z "$STYLE" ]
+then
+        STYLE='style.css'
+fi
+
+if [ -z "$EXT" ]
+then
+        EXT='md'
+fi
+
+if [ -z "$FORMAT" ]
+then
+        FORMAT='html'
+fi
+
+
+TEMP=`mktemp -t what-you-got -d`
+CURDIR=`pwd`
+TITLE=$(basename $TARGET)
+
+rm -rf $OUT
+mkdir -p $OUT
+cp $STYLE $OUT
+
+git clone $TARGET $TEMP >/dev/null 2>&1
+
+cd $TEMP 
+git checkout $BRANCH
+cd $CURDIR
+
+MARKDOWNS=`find $TEMP -name "*.$EXT"`
+NAMES=$(echo $MARKDOWNS | sed "s|$TEMP||g")
+
+RENDERD=""
+DIRS=""
+
+# Generating html
+for name in $NAMES;
+do
+        DIRS+="$(dirname $name)\n"
+        html_name=${name%".$EXT"}.$FORMAT
+        mkdir -p "$OUT"`dirname $name`
+        pandoc -s -S -c /$STYLE $TEMP$name -o $OUT$html_name >/dev/null 2>&1
+done
+
+# Table of contents
+DIRS=$(echo $DIRS | sort --unique)
+
+for D in $DIRS;
+do
+    pushd $OUT$D >/dev/null 2>&1
+    FILES=$(ls "*.$EXT" 2>/dev/null)
+    SUBDIRS=$(ls -d */ 2>/dev/null) 
+    TOC=$SUBDIRS$FILES
+    echo $TOC | pandoc -c /$STYLE -o "index.$EXT"
+    popd >/dev/null 2>&1
+done
+
+echo $OUT
