@@ -1,8 +1,12 @@
 #!/usr/bin/env sh
-set +e
-while getopts ":o:s:e:u:f:" opt;
+EXTS=''
+
+while getopts ":o:s:e:u:f:b:c" opt;
 do
     case $opt in
+        c)
+            SCP="TRUE"
+            ;;
         u)
             TARGET=$OPTARG
             ;;
@@ -15,10 +19,13 @@ do
             ;;
 
         e)
-            EXT=$OPTARG
+            EXTS+="$OPTARG "
             ;;
         f)
             FORMAT=$OPTARG
+            ;;
+        b)
+            BRANCH=$OPTARG
             ;;
         \?)
           echo "Invalid option: -$OPTARG" >&2
@@ -30,6 +37,8 @@ do
           ;;
     esac
 done
+
+echo $EXTS
 
 if [ -z "$TARGET" ]
 then
@@ -48,9 +57,9 @@ then
         STYLE='style.css'
 fi
 
-if [ -z "$EXT" ]
+if [ -z "$EXTS" ]
 then
-        EXT='md'
+        EXTS='md'
 fi
 
 if [ -z "$FORMAT" ]
@@ -63,42 +72,37 @@ TEMP=`mktemp -t what-you-got -d`
 CURDIR=`pwd`
 TITLE=$(basename $TARGET)
 
+echo "REMOVING $OUT"
 rm -rf $OUT
+
 mkdir -p $OUT
 cp $STYLE $OUT
 
-git clone $TARGET $TEMP >/dev/null 2>&1
+if [ -z $SCP ] 
+    then
+    git clone $TARGET $TEMP >&2
 
-cd $TEMP 
-git checkout $BRANCH
-cd $CURDIR
+    cd $TEMP 
+    git checkout $BRANCH
+    cd $CURDIR
+else
+    scp -r $TARGET $TEMP
+fi
 
-MARKDOWNS=`find $TEMP -name "*.$EXT"`
-NAMES=$(echo $MARKDOWNS | sed "s|$TEMP||g")
-
-RENDERD=""
-DIRS=""
-
-# Generating html
-for name in $NAMES;
+for EXT in $EXTS; 
 do
-        DIRS+="$(dirname $name)\n"
-        html_name=${name%".$EXT"}.$FORMAT
-        mkdir -p "$OUT"`dirname $name`
-        pandoc -s -S -c /$STYLE $TEMP$name -o $OUT$html_name >/dev/null 2>&1
+    MARKDOWNS=`find $TEMP -iname "*.$EXT"`
+    NAMES=$(echo $MARKDOWNS | sed "s|$TEMP||g")
+
+    for name in $NAMES;
+    do
+            html_name=${name%".$EXT"}.$FORMAT
+            TOC+="- [${name%".$EXT"}]($html_name) \n"
+            mkdir -p "$OUT"`dirname $name`
+            pandoc -s -S -c /$STYLE $TEMP$name -o $OUT$html_name >/dev/null 2>&1
+    done
 done
 
-# Table of contents
-DIRS=$(echo $DIRS | sort --unique)
-
-for D in $DIRS;
-do
-    pushd $OUT$D >/dev/null 2>&1
-    FILES=$(ls "*.$EXT" 2>/dev/null)
-    SUBDIRS=$(ls -d */ 2>/dev/null) 
-    TOC=$SUBDIRS$FILES
-    echo $TOC | pandoc -c /$STYLE -o "index.$EXT"
-    popd >/dev/null 2>&1
-done
+echo $TOC | sort | pandoc -f markdown -c /$STYLE -o "$OUT$D/index.$FORMAT"
 
 echo $OUT
