@@ -1,4 +1,4 @@
-bag [opionts] git-url
+bag [opionts]
 
 Example:
 
