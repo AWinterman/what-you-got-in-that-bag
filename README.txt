@@ -2,7 +2,7 @@ bag [opionts]
 
 Example:
 
-  bag -e=md -o=./build -s=./style.css -f html
+  bag -e=md -o=./build -s=./style.css -f html -u https://example.com
 
 Description:
 
@@ -11,6 +11,11 @@ contents.
 
 Relies heavily on pandoc under the hood:
 http://johnmacfarlane.net/pandoc/README.html
+
+    -u URL
+
+        A url specifying the location of a git repo, or,  the -c flag is
+        specified, a directory to pandoc.
 
     -e EXTENSION
 
